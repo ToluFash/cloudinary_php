@@ -1,10 +1,13 @@
 <?php
-$base = realpath(dirname(__FILE__) . DIRECTORY_SEPARATOR . '..');
+namespace CloudinaryTest;
 
+use Cloudinary;
+use DOMDocument;
 use PHPUnit\Framework\TestCase;
 
-require_once(join(DIRECTORY_SEPARATOR, array($base, 'src', 'Cloudinary.php')));
-
+/**
+ * Class TagTest
+ */
 class TagTest extends TestCase
 {
     const DEFAULT_UPLOAD_PATH = 'http://res.cloudinary.com/test123/image/upload/';
@@ -52,7 +55,7 @@ class TagTest extends TestCase
             $tag
         );
     }
-    
+
     /**
      * Should create a meta tag with client hints
      */
@@ -250,8 +253,7 @@ class TagTest extends TestCase
         $custom_trans_str = '',
         $srcset_breakpoints = array(),
         $attributes = array()
-    )
-    {
+    ) {
         if (empty($custom_trans_str)) {
             $custom_trans_str = $common_trans_str;
         }
@@ -780,6 +782,98 @@ class TagTest extends TestCase
         );
     }
 
+    public function test_cl_video_tag_default_sources()
+    {
+        $expected_url = self::VIDEO_UPLOAD_PATH . "%smovie.%s";
+
+        $this->assertEquals(
+            "<video poster='" . sprintf($expected_url, '', 'jpg') ."'>" .
+            "<source src='" . sprintf($expected_url, 'vc_h265/', 'mp4') . "' type='video/mp4; codecs=hevc'>" .
+            "<source src='" . sprintf($expected_url, 'vc_vp9/', 'webm') . "' type='video/webm; codecs=vp9'>" .
+            "<source src='" . sprintf($expected_url, 'vc_auto/', 'mp4') . "' type='video/mp4'>" .
+            "<source src='" . sprintf($expected_url, 'vc_auto/', 'webm') . "' type='video/webm'>" .
+            "</video>",
+            cl_video_tag('movie', array('sources' => default_video_sources()))
+        );
+    }
+
+    public function test_cl_video_tag_custom_sources()
+    {
+        $custom_sources = [
+            [
+                "type"            => "mp4",
+                "codecs"          => "vp8, vorbis",
+                "transformations" => ["video_codec" => "auto"]
+            ],
+            [
+                "type"            => "webm",
+                "codecs"          => "avc1.4D401E, mp4a.40.2",
+                "transformations" => ["video_codec" => "auto"]
+            ]
+        ];
+        $expected_url = self::VIDEO_UPLOAD_PATH . "%smovie.%s";
+
+        $this->assertEquals(
+            "<video poster='" . sprintf($expected_url, '', 'jpg') ."'>" .
+            "<source src='" . sprintf($expected_url, 'vc_auto/', 'mp4') .
+            "' type='video/mp4; codecs=vp8, vorbis'>" .
+            "<source src='" . sprintf($expected_url, 'vc_auto/', 'webm') .
+            "' type='video/webm; codecs=avc1.4D401E, mp4a.40.2'>" .
+            "</video>",
+            cl_video_tag('movie', array('sources' => $custom_sources))
+        );
+    }
+
+    public function test_cl_video_tag_sources_codecs_array()
+    {
+        $custom_sources = [
+            [
+                "type"            => "mp4",
+                "codecs"          => ["vp8", "vorbis"],
+                "transformations" => ["video_codec" => "auto"]
+            ],
+            [
+                "type"            => "webm",
+                "codecs"          => ["avc1.4D401E", "mp4a.40.2"],
+                "transformations" => ["video_codec" => "auto"]
+            ]
+        ];
+        $expected_url = self::VIDEO_UPLOAD_PATH . "%smovie.%s";
+
+        $this->assertEquals(
+            "<video poster='" . sprintf($expected_url, '', 'jpg') ."'>" .
+            "<source src='" . sprintf($expected_url, 'vc_auto/', 'mp4') .
+            "' type='video/mp4; codecs=vp8, vorbis'>" .
+            "<source src='" . sprintf($expected_url, 'vc_auto/', 'webm') .
+            "' type='video/webm; codecs=avc1.4D401E, mp4a.40.2'>" .
+            "</video>",
+            cl_video_tag('movie', array('sources' => $custom_sources))
+        );
+    }
+
+    public function test_cl_video_tag_sources_with_transformation()
+    {
+        $options      = array(
+            'source_types' => "mp4",
+            'html_height'  => "100",
+            'html_width'   => "200",
+            'video_codec'  => array('codec' => 'h264'),
+            'audio_codec'  => 'acc',
+            'start_offset' => 3,
+            'sources' => default_video_sources()
+        );
+        $expected_url = self::VIDEO_UPLOAD_PATH . "ac_acc,so_3,%smovie.%s";
+
+        $this->assertEquals(
+            "<video height='100' poster='" . sprintf($expected_url, 'vc_h264/', 'jpg') ."' width='200'>" .
+            "<source src='" . sprintf($expected_url, 'vc_h265/', 'mp4') . "' type='video/mp4; codecs=hevc'>" .
+            "<source src='" . sprintf($expected_url, 'vc_vp9/', 'webm') . "' type='video/webm; codecs=vp9'>" .
+            "<source src='" . sprintf($expected_url, 'vc_auto/', 'mp4') . "' type='video/mp4'>" .
+            "<source src='" . sprintf($expected_url, 'vc_auto/', 'webm') . "' type='video/webm'>" .
+            "</video>",
+            cl_video_tag('movie', $options)
+        );
+    }
 
     public function test_upload_tag()
     {
